@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.example.chess";
+option java_outer_classname = "ChessProto";
+option objc_class_prefix = "CHS";
+
+package chess;
+
+// The Chess service definition.
+service Chess {
+  // Sends a chess move request
+  rpc getNextMove (Move ) returns (Move) {}
+
+}
+
+// The request message containing the user's name.
+message Move {
+  string move = 1;
+}
