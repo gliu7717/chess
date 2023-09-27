@@ -1,21 +1,23 @@
 package com.example.chess
 
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Point
+import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import org.checkerframework.checker.units.qual.h
 
 
 class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
-
     private var offset = (size * 28f / 56f).toInt()
     private var figures = arrayOf<Figure>()
-    private val board = arrayOf(
+    private var board = arrayOf(
         intArrayOf(-1, -2, -3, -4, -5, -3, -2, -1),
         intArrayOf(-6, -6, -6, -6, -6, -6, -6, -6),
         intArrayOf(0, 0, 0, 0, 0, 0, 0, 0),
@@ -32,9 +34,10 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
     private var movePositions = ""
     var logText = ""
 
-    private val uri by lazy { Uri.parse("http://150.136.175.102:50051/") }
+    //private val uri by lazy { Uri.parse("http://150.136.175.102:50051/") }
+    private val uri by lazy { Uri.parse("http://192.168.0.129:50051/") }
     private val chessRCP by lazy { ChessRCP(uri) }
-
+    private var validMoves = ValidMoves(board, offset, size)
 
     init {
         load()
@@ -50,7 +53,7 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
                 var y = 0
                 if (n > 0) y = 1
                 var index = y * 6 + x
-                figures += Figure(figureDrawables[index], j, i, size)
+                figures += Figure(figureDrawables[index], j, i, n, size)
             }
     }
 
@@ -65,6 +68,7 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
     {
         for(f in figures)
             f.draw(canvas)
+        validMoves.draw(canvas)
     }
 
     fun contain(x:Int, y:Int):Figure?
@@ -89,27 +93,51 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
     }
 
     private fun myMove() {
-        if(!playerMove)  // computer move
-            return
-        if( selectedFigure!= null ){
+        if( playerMove && selectedFigure!= null ){
             if(newDestPosition!=null) {
                 Log.i("MYTAG", "new Position: ${newDestPosition!!.x} ${newDestPosition!!.y} ")
                 var oldPosition =selectedFigure!!.chessPosition
+                if(validMoves.isValid(newDestPosition!!) ) {
+                    val p1 = Figure.toCoord(oldPosition[0], oldPosition[1])
+                    board[newDestPosition!!.y][newDestPosition!!.x] = selectedFigure!!.id
+                    board[p1.y][p1.x] = 0
+                    selectedFigure!!.moveTo(newDestPosition!!);
+                    playerMove = false
+                    movePositions += oldPosition + selectedFigure!!.chessPosition + " "
+                    logText = movePositions
+                    validMoves.clear()
 
-                if(oldPosition == toChessNote(newDestPosition!!)) {
+                    //castling move
+                    myCastlingMove()
                     newDestPosition = null
                     return
                 }
-                selectedFigure!!.moveTo(newDestPosition!!);
-                playerMove = false
-                newDestPosition = null
-                movePositions += oldPosition + selectedFigure!!.chessPosition + " "
-                logText = movePositions
             }
-            else {
-                selectedFigure!!.moveTo(selectedFigure!!.chessPosition);
-                newDestPosition= null
-            }
+            selectedFigure!!.moveTo(selectedFigure!!.chessPosition);
+            newDestPosition= null
+        }
+        validMoves.clear()
+    }
+
+    private fun myCastlingMove()
+    {
+        if(selectedFigure!!.id == 5 && // king
+            newDestPosition!!.x == 6 &&
+            newDestPosition!!.y == 7) {
+            val myRook = figures[31]
+            val p = Point(5,7)
+            board[7][5] = myRook.id
+            board[7][7] = 0
+            myRook.moveTo(p)
+        }
+        if( selectedFigure!!.id == 5 && // king
+            newDestPosition!!.x == 2 &&
+            newDestPosition!!.y == 7) {
+            val myRook = figures[24]
+            val p = Point(3,7)
+            board[7][3] = myRook.id
+            board[7][0] = 0
+            myRook.moveTo(p)
         }
     }
 
@@ -120,11 +148,6 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
         CoroutineScope(Dispatchers.IO).launch {
             val responseMsg = chessRCP.getNextStep(movePositions)
             Log.i("MYTAG", "New pos: " + responseMsg)
-            /*
-            movePositions += chessRCP.responseState.value + " "
-            newDestPosition = null
-            move(chessRCP.responseState.value)
-             */
             if(responseMsg.isNotEmpty()) {
                 movePositions += responseMsg + " "
                 newDestPosition = null
@@ -149,11 +172,15 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
     fun move(value: String) {
         val oldPos = value.substring(0,2)
         val newPos = value.substring(2,4)
+        val p1 = Figure.toCoord(oldPos[0], oldPos[1])
+        val p2 = Figure.toCoord(newPos[0], newPos[1])
         for(f in figures) {
             if(f.chessPosition == newPos){
                 f.killed = true
             }
             else if(f.chessPosition == oldPos){
+                board[p2.y][p2.x] = f.id
+                board[p1.y][p1.x] = 0
                 f.moveTo(newPos)
             }
         }
@@ -164,7 +191,7 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
             return
 
         var figure = contain(x, y)
-        if(figure==null)
+        if(figure==null || figure.id < 0)
             return
         isMove = true
         selectedFigure = figure
@@ -175,7 +202,9 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
         logText += " ${figure.playerColor}  ${figure.chessPosition}  ${figure.chessNote}"
         figure.setPosition(x, y);
         Log.i("MYTAG", "new Position: ${figure.position} ")
+        validMoves.setValidMoves(figure, movePositions)
     }
+
 
     fun move(x:Int, y:Int)
     {
@@ -186,9 +215,8 @@ class Figures (var figureDrawables: Array<Drawable>, var size:Int) {
     fun confirmMove(x:Int, y:Int)
     {
         isMove = false
-        if(selectedFigure == null)
-            return
-        newDestPosition = findChessPosition(x,y )
+        if(selectedFigure != null)
+            newDestPosition = findChessPosition(x,y )
      }
 
 }

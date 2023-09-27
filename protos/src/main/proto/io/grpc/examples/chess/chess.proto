@@ -11,6 +11,7 @@ package chess;
 service Chess {
   // Sends a chess move request
   rpc getNextMove (Move ) returns (Move) {}
+  rpc setNextMove (Move ) returns (Move) {}
 
 }
 

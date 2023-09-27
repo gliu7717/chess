@@ -5,7 +5,7 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 
-class Figure (var drawable: Drawable, var x:Int, var y:Int, var size:Int)
+class Figure (var drawable: Drawable, var x:Int, var y:Int, var id:Int, var size:Int)
 {
     private var offset = (size * 28f/56f).toInt()
     var position =  Rect(x * size + offset, y*size + offset, (x + 1) *size + offset, (y +1) * size + offset)
@@ -56,13 +56,6 @@ class Figure (var drawable: Drawable, var x:Int, var y:Int, var size:Int)
         chessPosition += (7 - y + 49).toChar()
     }
 
-    fun toCoord(a:Char, b: Char) :Point
-    {
-        val p = Point()
-        p.x = a.code - 97
-        p.y = 7- b.code +49
-        return p
-    }
 
     fun moveTo(pos:String)
     {
@@ -72,5 +65,16 @@ class Figure (var drawable: Drawable, var x:Int, var y:Int, var size:Int)
 
     fun update()
     {
+    }
+
+    companion object {
+        fun toCoord(a:Char, b: Char) :Point
+        {
+            val p = Point()
+            p.x = a.code - 97
+            p.y = 7- b.code +49
+            return p
+        }
+
     }
 }

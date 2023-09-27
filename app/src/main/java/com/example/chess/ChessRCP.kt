@@ -6,6 +6,7 @@ import io.grpc.ManagedChannelBuilder
 import io.grpc.example.chess.ChessGrpcKt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.delay
 import java.io.Closeable
 
 class ChessRCP(uri: Uri) : Closeable {
@@ -36,11 +37,22 @@ class ChessRCP(uri: Uri) : Closeable {
 
     suspend fun getNextStep(currentMove: String) :String {
         try {
-            val request = io.grpc.example.chess.move {
-                move = currentMove
+            while (true){
+                val request = io.grpc.example.chess.move {
+                    move = currentMove
+                }
+                val response = chessRequest.getNextMove(request)
+                if(response.move.isEmpty()){
+                    delay(2000)
+                }
+                else {
+                    val request = io.grpc.example.chess.move {
+                        move = ""
+                    }
+                    val response1 = chessRequest.setNextMove(request)
+                    return response.move
+                }
             }
-            val response = chessRequest.getNextMove(request)
-            return response.move
         } catch (e: Exception) {
             e.printStackTrace()
         }
