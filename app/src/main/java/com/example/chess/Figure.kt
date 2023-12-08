@@ -5,10 +5,13 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 
-class Figure (var drawable: Drawable, var x:Int, var y:Int, var id:Int, var size:Int)
+class Figure (var drawable: Drawable, var x:Int, var y:Int, var id:Int, var size:Int, val boardOffset:Int)
 {
     private var offset = (size * 28f/56f).toInt()
-    var position =  Rect(x * size + offset, y*size + offset, (x + 1) *size + offset, (y +1) * size + offset)
+    var position =  Rect(x * size + offset,
+        y*size + offset + boardOffset,
+        (x + 1) *size + offset,
+        (y +1) * size + offset + boardOffset)
     var playerColor = ""    //  W|B
     var chessNote = "" // K|Q|R|B|N|P
     var chessPosition = ""
@@ -50,7 +53,10 @@ class Figure (var drawable: Drawable, var x:Int, var y:Int, var id:Int, var size
     {
         x = p.x
         y = p.y
-        position =  Rect(x * size + offset, y*size + offset, (x + 1) *size + offset, (y +1) * size + offset)
+        position =  Rect(x * size + offset,
+            y*size + offset + boardOffset,
+            (x + 1) *size + offset,
+            (y +1) * size + offset + boardOffset)
         chessPosition = ""
         chessPosition += (x + 97).toChar()
         chessPosition += (7 - y + 49).toChar()
@@ -74,6 +80,13 @@ class Figure (var drawable: Drawable, var x:Int, var y:Int, var id:Int, var size
             p.x = a.code - 97
             p.y = 7- b.code +49
             return p
+        }
+        fun toChessPosition( p: Point) :String
+        {
+            var chessPosition = ""
+            chessPosition += (p.x + 97).toChar()
+            chessPosition += (7 - p.y + 49).toChar()
+            return chessPosition
         }
 
     }

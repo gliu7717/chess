@@ -1,6 +1,7 @@
 package com.example.chess
 
 import android.net.Uri
+import android.util.Log
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.example.chess.ChessGrpcKt
@@ -8,10 +9,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.delay
 import java.io.Closeable
+import io.grpc.example.chess.Table
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class ChessRCP(uri: Uri) : Closeable {
 
     private val channel : ManagedChannel
+    private val lock = ReentrantLock()
+    private val condition = lock.newCondition()
     init {
         val builder = ManagedChannelBuilder.forAddress(uri.host, uri.port)
         if (uri.scheme == "https") {
@@ -35,31 +43,62 @@ class ChessRCP(uri: Uri) : Closeable {
 
     private val chessRequest = ChessGrpcKt.ChessCoroutineStub(channel)
 
-    suspend fun getNextStep(currentMove: String) :String {
+    suspend fun getNextStep(tableId: Int, currentMove: String) :String {
         try {
-            while (true){
-                val request = io.grpc.example.chess.move {
-                    move = currentMove
-                }
-                val response = chessRequest.getNextMove(request)
-                if(response.move.isEmpty()){
-                    delay(2000)
-                }
-                else {
-                    val request = io.grpc.example.chess.move {
-                        move = ""
-                    }
-                    val response1 = chessRequest.setNextMove(request)
-                    return response.move
-                }
+            val request = io.grpc.example.chess.table {
+                id= tableId
+                blackPlayer = ""
+                whitePlayer = ""
+                move = currentMove
             }
+            val response = chessRequest.getNextMove(request)
+            return response.move
         } catch (e: Exception) {
             e.printStackTrace()
         }
         return ""
     }
 
+    suspend fun getTables() :List<Table>? {
+        try {
+            val request = io.grpc.example.chess.noparam {
+            }
+            val response = chessRequest.getTables(request)
+            return response.tablesList
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    suspend fun setTable(table: Table) :List<Table>? {
+        try {
+            val request = table
+            val response = chessRequest.setTable(request)
+            return response.tablesList
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
     override fun close() {
         channel.shutdownNow()
     }
+
+
+    companion object {
+        private lateinit var INSTANCE: ChessRCP
+        @JvmStatic
+        fun getInstance(uri: Uri): ChessRCP {
+            if (!::INSTANCE.isInitialized) {
+                INSTANCE = ChessRCP(uri)
+            }
+            return INSTANCE
+        }
+        fun getInstance(): ChessRCP {
+            return INSTANCE
+        }
+    }
+
 }

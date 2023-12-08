@@ -10,12 +10,25 @@ package chess;
 // The Chess service definition.
 service Chess {
   // Sends a chess move request
-  rpc getNextMove (Move ) returns (Move) {}
-  rpc setNextMove (Move ) returns (Move) {}
-
+  rpc getNextMove (Table) returns (Move) {}
+  rpc getTables(noparam) returns (ChessTables){};
+  rpc setTable(Table) returns (ChessTables){};
 }
 
 // The request message containing the user's name.
 message Move {
   string move = 1;
+}
+
+message noparam {}
+
+message Table {
+  int32 id = 1;
+  string blackPlayer = 2;
+  string whitePlayer = 3;
+  string move = 4;
+}
+
+message ChessTables {
+  repeated Table tables = 1;
 }

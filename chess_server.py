@@ -7,15 +7,45 @@ import chess_pb2_grpc
 
 class Chess(chess_pb2_grpc.ChessServicer):
     nextMove = ""
+    tables = []
+    
+    def __init__(self):
+        for i in range(0, 10):
+            self.tables.append( chess_pb2.Table( id = i + 1,blackPlayer="",whitePlayer=""))
+            
     def getNextMove(self, request, context):
-        print("player move: %s" % request.move)
-        print("computer move: %s" % self.nextMove)
-        return chess_pb2.Move(move=self.nextMove)    
+        print("saved move: %s" % self.nextMove)
+        print("request move: %s" % request.move)
+        if(len(request.move) > len(self.nextMove)):
+            self.nextMove = request.move
+        return chess_pb2.Move(move=self.nextMove)
+        
     def setNextMove(self, request, context):
         print("set player move: %s" % request.move)
         self.nextMove = request.move
         return chess_pb2.Move(move=self.nextMove)
+        
+    def setTable(self, request, context):
+        freeTables = []
+        for table in self.tables:
+            if(table.id == request.id):
+                table.blackPlayer = request.blackPlayer
+                table.whitePlayer = request.whitePlayer
+            if len(table.blackPlayer) == 0 or len(table.whitePlayer) == 0:
+                freeTables.append(table)
+        return chess_pb2.ChessTables(tables=freeTables)    
 
+    def getTables(self, request, context):
+        print("Entered GetTables")
+        freeTables = []
+        for table in self.tables:
+            if len(table.blackPlayer) == 0 or len(table.whitePlayer) == 0:
+                freeTables.append(table)
+        l = len(freeTables)
+        print( f'The number is {l}' )
+                
+        return chess_pb2.ChessTables(tables=freeTables)    
+        
 
 def serve():
     port = "50051"

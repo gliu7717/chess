@@ -6,7 +6,7 @@ import android.graphics.Paint
 import android.graphics.Point
 import android.graphics.Rect
 
-class ValidMoves(val board:Array<IntArray>, val offset:Int, val size:Int) {
+class ValidMoves(val board:Array<IntArray>, val offset:Int, val size:Int, val boardOffset:Int) {
     private var validPositions = arrayListOf<Point>()
 
     fun isValid(p:Point) :Boolean{
@@ -17,9 +17,8 @@ class ValidMoves(val board:Array<IntArray>, val offset:Int, val size:Int) {
     {
         for( p in validPositions){
             var centerX = p.x * size + offset + size/2
-            var centerY = p.y * size + offset + size/2
+            var centerY = p.y * size + offset + size/2 + boardOffset
 
-            var position =  Rect(p.x * size + offset, p.y*size + offset, (p.x + 1) *size + offset, (p.y +1) * size + offset)
             val paint = Paint()
             paint.style = Paint.Style.FILL
             paint.color = Color.GREEN

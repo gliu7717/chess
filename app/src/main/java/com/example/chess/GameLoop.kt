@@ -6,7 +6,7 @@ class GameLoop(var game: Game, var surfaceHolder: SurfaceHolder): Thread() {
     var averageFPS: Double = 0.0
     var averageUPS: Double = 0.0
 
-    var MAX_UPS = 30.0
+    var MAX_UPS = 5.0
     var UPS_PERIOD = 1E3/MAX_UPS
     var isRunning = false
 
